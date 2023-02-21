@@ -82,4 +82,4 @@ def posts_delete(id):
     conn.commit()
     conn.close()
     flash('"{}" was successfully deleted!'.format(post['title']))
-    return redirect(url_for('posts/routes.posts_index'))
+    return redirect(url_for('routes.posts_index'))
