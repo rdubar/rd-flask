@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %} {% endblock %} - FlaskApp</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/purecss@3.0.0/build/pure-min.css" integrity="sha384-X38yfunGUhNzHpBaEBsWLO+A0HDYOQi8ufWDkZ0k9e0eXz/tH3II7uKZ9msv++Ls" crossorigin="anonymous">
+    <style>
+        .post {
+            padding: 10px;
+            margin: 5px;
+            background-color: #f3f3f3
+        }
+        .alert {
+            padding: 20px;
+            margin: 5px;
+            color: #970020;
+            background-color: #ffd5de;
+        }
+    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+    <nav>
+        <a href="{{ url_for('routes.index') }}">FlaskApp</a>
+        <a href="{{ url_for('routes.posts_index') }}">Posts</a>
+        <a href="{{ url_for('routes.posts_create') }}">Create</a>
+        <a href="#">About</a>
+    </nav>
+    <hr>
+    <div class="content">
+        {% for message in get_flashed_messages() %}
+            <div class="alert">{{ message }}</div>
+        {% endfor %}
+
+        {% block content %} {% endblock %}
+    </div>
+</body>
+</html>
