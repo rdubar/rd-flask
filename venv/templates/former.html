@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+<script>
+    // From https://stackoverflow.com/questions/54498853/how-to-onclick-copy-text-to-clipboard-from-a-p-tag-using-javascript-jquery
+function copyElementText(id) {
+    var text = document.getElementById(id).innerText;
+    var elem = document.createElement("textarea");
+    document.body.appendChild(elem);
+    elem.value = text;
+    elem.select();
+    document.execCommand("copy");
+    document.body.removeChild(elem);
+}
+</script>
+
+<h3 class="display-4 text-success">{% if title %}{{ title }}{% else %}}Rog's Form{% endif %}</h3>
+{% if text %}
+<h1 title="Copy Text" id="text" onclick="copyElementText(this.id)">{{ text }}</h1>
+{% endif %}
+<br>
+    <form method="post">
+        <input type="text" name="text"
+               placeholder="Some text..."
+               value="{{ request.form['text'] }}"></input>
+        <br><br>
+        <button class="btn btn-success" type="submit">Submit</button>
+    </form>
+
+{% endblock %}
