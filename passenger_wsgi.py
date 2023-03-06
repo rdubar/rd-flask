@@ -1,11 +1,13 @@
-
 import os
 import sys
+
+#PROJECT_DIR="/home/surefire/rd-flask/"
+#sys.path.insert(0, PROJECT_DIR)
 
 sys.path.append("/home/surefire/rd-flask/venv")
 
 #sys.path.insert(0, os.path.dirname(__file__))
-
+#sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 
 from app import app as application
 
