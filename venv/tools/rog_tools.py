@@ -1,8 +1,13 @@
 import os, sys, time, pickle, random, argparse
+import timeago, datetime
 #from tqdm import tqdm
 #import pymediainfo
 #from colorama import init, Fore
 #init(autoreset=True)
+
+def time_ago(date):
+    now = datetime.datetime.now()
+    return timeago.format(date, now)
 
 def log(text):
     print(text)
@@ -43,6 +48,7 @@ def get_all_files(root_dir : str, verbose=False, ignore = []) -> dict:
     print(f'Got {len(path_list):,} and skipped {len(skipped_list):,} items in {showtime(clock)}.')
     if verbose: print(f'Skipped list: {skipped_list}')
     return path_list
+
 
 def purge_files(path_list, purge_list, ignore_case = False):
     ''' Purge items in path_list matching text in the purge_list, returning a new list of remaining items '''
@@ -126,14 +132,14 @@ def load_data(path):
     if not os.path.exists(path):
         log(f'No data file at {path}')
         return None
-    modified = get_modified_time(path, str=True)
+    modified = time_ago(get_modified_time(path, str=False))
     with open(path, 'rb') as handle:
         try:
             data = pickle.load(handle)
         except Exception as e:
             log(f'FAILED TO LOAD: {path}: {e}')
             return None
-    log(f'Loaded {len(data):,} records from {path}, last updated: {modified}')
+    log(f'Loaded {len(data):,} records from {path}, last updated {modified}.')
     return data
 
 
