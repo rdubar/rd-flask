@@ -5,7 +5,7 @@ import time, argparse, os
 from dataclasses import dataclass
 from tqdm import tqdm
 
-from rog_tools import load_data, save_data, log, time_ago
+from rog_tools import load_data, save_data, log, time_ago, show_file_size
 
 # Plex Server Credentials
 PLEX_IP = '192.168.0.238'
@@ -136,16 +136,20 @@ def search_records(text, records):
             matches += 1
     print(f'{matches} matches for "{lower}".')
 
-def show_latest(records, number=10, verbose=False):
-    ''' show the latest [n] records (or all if 'verbose')'''
-    latest = sorted(records, key=lambda x: (x.added), reverse=True)
+def show_latest(records, number=10, verbose=False, reverse=False):
+    """ show the latest [n] records (or all if 'verbose') """
+    reverse = not reverse # ensure default behaviouir is newest first
+    items = [x for x in records if x.added != None]
+    desc = 'newest' if reverse else 'oldest'
+    latest = sorted(items, key=lambda x: (x.added), reverse=reverse)
     if verbose: number = len(records)
-    print(f'Showing newest {number} records.')
+    print(f'Showing {desc} {number} records.')
     for i in range(number):
         print(latest[i])
 
+
 def show_quality(records, number=10, verbose=False, reverse=False):
-    ''' show the lowest [n] resolution records (or all if 'verbose')'''
+    """ show the lowest [n] resolution records (or all if 'verbose') """
     quality = 'highest' if reverse else 'lowest'
     height = [ x for x in records if x.height != None ]
     lowest = sorted(height, key=lambda x: (x.height) or 0, reverse=reverse)
@@ -154,33 +158,43 @@ def show_quality(records, number=10, verbose=False, reverse=False):
     for i in range(number):
         print(lowest[i])
 
-
+def show_size(records, number=10, verbose=False, reverse=False):
+    """ show the largest [n] resolution records (or all if 'verbose') """
+    quality = 'largest' if reverse else 'smallest'
+    size = [ x for x in records if x.size != None ]
+    largest = sorted(size, key=lambda x: (x.size) or 0, reverse=reverse)
+    if verbose: number = len(records)
+    print(f'Showing {number} {quality} file size items.')
+    for i in range(number):
+        print(largest[i], show_file_size(largest[i].size))
 
 def main():
     parser = argparse.ArgumentParser()
     p = parser.add_argument
     p("search", help="search the library", type=str, nargs='*')
     p("-q", '--quality', help="show [10] highest resolution items", type=int, nargs='?', const=10)
-    p("-l", '--low', help="show [10] lowest resolution items", type=int, nargs='?', const=10)
     p("-n", '--new', help="show [10] newest items", type=int, nargs='?', const=10)
-    p("-r", "--reset", help="reset the library", action="store_true")
+    p("-s", '--size', help="show [10] smallest file size items", type=int, nargs='?', const=10)
+    p("-r", "--reverse", help="reverse the order of any list", action="store_true")
     p("-u", "--update", help="update the library", action="store_true")
     p("-v", "--verbose", help="increase output verbosity", action="store_true")
+    p("--reset", help="reset the library", action="store_true")
     args = parser.parse_args()
     verbose = args.verbose
+    reverse = args.reverse
 
     if verbose: print(f'Verbose mode. Arguments: {args}')
 
     data = update_media_records(update=args.update, reset=args.reset, verbose=verbose)
 
     if args.quality:
-        show_quality(data, number = args.quality, verbose=verbose, reverse=True)
+        show_quality(data, number = args.quality, verbose=verbose, reverse=reverse)
 
-    if args.low:
-        show_quality(data, number = args.low, verbose=verbose)
+    if args.size:
+        show_size(data, number = args.size, verbose=verbose, reverse=reverse)
 
     if args.new:
-        show_latest(data, number = args.new, verbose=verbose)
+        show_latest(data, number = args.new, verbose=verbose, reverse=reverse)
 
     if args.search:
         search = ' '.join(args.search).lower()
