@@ -1,5 +1,7 @@
+import os
+
 from plexapi.server import PlexServer
-import time, argparse
+import time, argparse, os
 from dataclasses import dataclass
 from tqdm import tqdm
 
@@ -8,7 +10,8 @@ from rog_tools import load_data, save_data, log
 # Plex Server Credentials
 PLEX_IP = '192.168.0.238'
 PLEX_PORT = '32400'
-PLEX_TOKEN = 'dbufy5hZk2k91QpxYUuW'
+PLEX_TOKEN = os.environ.get('PLEX_TOKEN', None)
+if not PLEX_TOKEN: log('NO PLEX TOKEN!')
 
 PlEX_DATA = './plex.data'
 
@@ -36,7 +39,14 @@ class PlexRecord:
         f = m.parts[0] if hasattr(m,'parts') else empty
         self.size = f.size if hasattr(f, 'size') else empty
         self.file = f.file if hasattr(f, 'file') else empty
-        self.plex = None
+
+        year = f' ({self.year })' if self.year else ''
+        quality = f' {self.height}' if self.height else ''
+        self.plex = f'{self.title}{year}{quality}'
+
+    def __str__(self):
+        return self.plex
+
 
 def plex_url(part):
     # http://192.168.0.244:32400{m.thumb()}?X-Plex-Token=dbufy5hZk2k91QpxYUuW')
@@ -86,22 +96,25 @@ def update_media_records(update=False, verbose=False):
     else:
         # load the current data
         records = load_data(PlEX_DATA) or []
+    if not update and records:
+        return records
+
     entries = [ x.entry for x in records ] if records else []
     # get the plex media objects
     plex_media = connect_to_plex()
-    update = []
+    new = []
     for item in plex_media:
         year = item.year if hasattr(item,'year') else ''
         entry = get_entry(item.title, year)
         if not entry in entries:
-            update.append(item)
-    u = len(update)
+            new.append(item)
+    u = len(new)
     if u > 0:
         d = f'Updating plex info for {u} items'
         if verbose:
-            for x in update:
+            for x in new:
                 print(x.entry)
-        for item in tqdm(update, desc=d):
+        for item in tqdm(new, desc=d):
             m =  PlexRecord(item)
             records.append(m)
         records = sorted(records, key=lambda x: (x.entry))
@@ -120,17 +133,26 @@ def search_records(text, records):
             print(item.entry)
             matches += 1
     print(f'{matches} matches for "{lower}".')
-def main():
 
+def show_latest(records, number=10):
+    latest = sorted(records, key=lambda x: (x.added), reverse=True)
+    for i in range(number):
+        print(latest[i])
+
+def main():
     parser = argparse.ArgumentParser()
     p = parser.add_argument
     p("search", help="search the library", type=str, nargs='*')
+    p("-n", '--new', help="show [10] newest items", type=int, nargs='?', const=10)
     p("-u", "--update", help="update the library", action="store_true")
     p("-v", "--verbose", help="increase output verbosity", action="store_true")
     args = parser.parse_args()
     verbose = args.verbose
 
     data = update_media_records(update=args.update, verbose=verbose)
+
+    if args.new:
+        show_latest(data, number = args.new)
 
     if args.search:
         search = ' '.join(args.search).lower()

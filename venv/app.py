@@ -1,11 +1,11 @@
-import sqlite3
+import sqlite3, os
 from flask import Flask, render_template, request, url_for, flash, redirect
 
 from flask_bootstrap import Bootstrap4
 from flask import Flask
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'D9oassl9.AxbLkOkY91VYhr#e`W3[m}cpJZ?qcD&=Nzs,^J33D]C>;l&MHdc-Sz'
+app.config['SECRET_KEY'] = PLEX_TOKEN = os.environ.get('SECRET KEY', 'WARNING! SET A SECRET KEY!')
 
 bootstrap = Bootstrap4(app)
 
