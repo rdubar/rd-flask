@@ -5,7 +5,7 @@ from flask_bootstrap import Bootstrap4
 from flask import Flask
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('SECRET KEY', 'WARNING! SET A SECRET KEY!')
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'WARNING! SET A SECRET KEY!')
 
 bootstrap = Bootstrap4(app)
 
