@@ -5,7 +5,7 @@ import time, argparse, os
 from dataclasses import dataclass
 from tqdm import tqdm
 
-from rog_tools import load_data, save_data, log, time_ago, show_file_size, get_modified_time
+from rog_tools import load_data, save_data, log, time_ago, show_file_size, get_modified_time, showtime
 
 # Plex Server Credentials
 PLEX_IP = '192.168.0.238'
@@ -184,11 +184,33 @@ def show_uncompressed(records, verbose=False, min=20):
         print(*uncompressed, sep='\n')
         if u > min: print(output)
 
+def sort_by(records, attrib='size', display=None, show=10, verbose=False, reverse=False):
+    filtered = [ x for x in records if hasattr(x, attrib) and getattr(x,attrib) != None ]
+    sorted_list = sorted(filtered, key=lambda x: getattr(x,attrib), reverse=reverse)
+    if verbose or show > 0:
+        reversed = ' (reversed)' if reverse else ''
+        s = len(sorted_list)
+        r = len(records)
+        if s > r: number = s
+        if not display: display = attrib
+        print(f"Showing {show:,} of {s:,} items sorted by '{display}'{reversed}.")
+        for i in range(show):
+            value = getattr(sorted_list[i],attrib)
+            if attrib == 'size':
+                value = show_file_size(value)
+            value = '' if attrib == 'added' else f'{value:>10}    '
+            print(f'{value}{sorted_list[i]}')
+    return sorted_list
+
+
 def main():
+    clock = time.perf_counter()
+
     parser = argparse.ArgumentParser()
     p = parser.add_argument
     p("search", help="search the library", type=str, nargs='*')
     p("-q", '--quality', help="show [10] highest resolution items", type=int, nargs='?', const=10)
+    p("-a", '--added', help="show [10] oldest items", type=int, nargs='?', const=10)
     p("-n", '--new', help="show [10] newest items", type=int, nargs='?', const=10)
     p("-s", '--size', help="show [10] smallest file size items", type=int, nargs='?', const=10)
     p("-r", "--reverse", help="reverse the order of any list", action="store_true")
@@ -205,13 +227,16 @@ def main():
     data = update_media_records(update=args.update, reset=args.reset, verbose=verbose)
 
     if args.quality:
-        show_quality(data, number = args.quality, verbose=verbose, reverse=reverse)
+        sort_by(data, attrib='height', show = args.quality, verbose=verbose, reverse=reverse)
 
     if args.size:
-        show_size(data, number = args.size, verbose=verbose, reverse=reverse)
+        sort_by(data, attrib='size', show = args.size, verbose=verbose, reverse=reverse)
+
+    if args.added:
+        sort_by(data, attrib='added', show=args.new, verbose=verbose, reverse=reverse)
 
     if args.new:
-        show_latest(data, number = args.new, verbose=verbose, reverse=reverse)
+        sort_by(data, attrib='added', display='newest', show=args.new, verbose=verbose, reverse=not reverse)
 
     if args.mpeg:
         show_uncompressed(data, verbose=verbose)
@@ -219,6 +244,9 @@ def main():
     if args.search:
         search = ' '.join(args.search).lower()
         search_records(search, data)
+
+    clock = time.perf_counter() - clock
+    print(f'Total elapsed time: {showtime(clock)}.')
 
 if __name__== "__main__" :
     main()
