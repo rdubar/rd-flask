@@ -137,7 +137,7 @@ def search_records(text, records):
     matches = 0
     for item in records:
         if lower in str(vars(item)).lower():
-            print(item.entry)
+            print(item)
             matches += 1
     print(f'{matches} matches for "{lower}".')
 
