@@ -1,7 +1,7 @@
 import os
 
 from plexapi.server import PlexServer
-import time, argparse, os
+import time, argparse, os, re
 from dataclasses import dataclass
 from tqdm import tqdm
 
@@ -15,8 +15,16 @@ if not PLEX_TOKEN: log('NO PLEX TOKEN!')
 
 PLEX_DATA = './plex.data'
 
+
+def object_clean(object, remove):
+    """ Hack to clean object information for easy plain text search """
+    text = str(object)
+    text = re.sub('[^A-Za-z0-9 ]+', ' ', text).replace(remove,'')
+    return text
+
 @dataclass
 class PlexRecord:
+    """ Record to store desired information from a Plex object as text """
     plex: object
 
     def __post_init__(self):
@@ -31,6 +39,9 @@ class PlexRecord:
         self.tagline = p.tagline if hasattr(p,'tagline') else empty
         self.duration = p.duration if hasattr(p,'duration') else empty
         self.added = p.addedAt if hasattr(p,'addedAt') else empty
+        self.directors = object_clean(p.directors,'Director') if hasattr(p, 'directors') else empty
+        self.roles = object_clean(p.roles,'Role') if hasattr(p, 'roles') else empty
+        self.writers = object_clean(p.writers,'Writer') if hasattr(p, 'writers') else empty
         m = p.media[0] if hasattr(p,'media') else None
         self.codec = m.videoCodec if hasattr(m,'videoCodec') else empty
         self.bitrate = m.bitrate if hasattr(m,'bitrate') else empty
@@ -51,10 +62,12 @@ class PlexRecord:
 
 
 def plex_url(part):
+    """ Build a plex URL """
     # http://192.168.0.244:32400{m.thumb()}?X-Plex-Token=dbufy5hZk2k91QpxYUuW')
     return f'http://{PLEX_IP}:{PLEX_PORT}{part}?X-Plex-Token={PLEX_TOKEN}'
 
 def get_entry(title, year):
+    """ Create an entry for media object in standard format: title (year) """
     entry = title.lower()
     if year:
         entry += f' ({year})'
@@ -64,7 +77,7 @@ def connect_to_plex(    server_ip = PLEX_IP,
                         port = PLEX_PORT,
                         token = PLEX_TOKEN
                             ):
-    # Connect to the Plex server
+    """Connect to the Plex server and return a list of Plex Objects """
     if not PLEX_TOKEN:
         print('No Plex Token: unable to connect to Plex')
         return []
@@ -87,13 +100,14 @@ def connect_to_plex(    server_ip = PLEX_IP,
     clock = time.perf_counter() - clock
     print(f'Received {len(plex_media):,} objects from Plex in {clock:.2f} seconds.')
 
-    def process(token):
-        return token['text']
+    #def process(token):
+    #    return token['text']
 
     return plex_media
 
 
-def update_media_records(update=False, reset = False, verbose=False, maxtime=12, path=PLEX_DATA):
+def update_media_records(update=False, reset = False, verbose=False, maxtime=12, path=PLEX_DATA, debug=False):
+    """ Update media records from the Plex Server Objects as required """
     if reset:
         log('Resetting all media records...')
         records = []
@@ -120,8 +134,11 @@ def update_media_records(update=False, reset = False, verbose=False, maxtime=12,
         d = f'Updating plex info for {u} items'
         if verbose:
             for x in new:
-                print(x.entry)
+                print(x)
         for item in tqdm(new, desc=d):
+            if debug:
+                print(vars(item))
+                debug = False
             m =  PlexRecord(item)
             records.append(m)
         records = sorted(records, key=lambda x: (x.entry))
@@ -130,7 +147,8 @@ def update_media_records(update=False, reset = False, verbose=False, maxtime=12,
         log('All records are up-to-date.')
     return records
 
-def search_records(text, records):
+def search_records(text, records, verbose=False):
+    """ Show result of search of media records """
     if not text or not records: return
     lower = text.lower()
     print(f'Searching for: {lower}')
@@ -138,42 +156,12 @@ def search_records(text, records):
     for item in records:
         if lower in str(vars(item)).lower():
             print(item)
+            if verbose: print(vars(item))
             matches += 1
     print(f'{matches} matches for "{lower}".')
 
-def show_latest(records, number=10, verbose=False, reverse=False):
-    """ show the latest [n] records (or all if 'verbose') """
-    reverse = not reverse # ensure default behaviouir is newest first
-    items = [x for x in records if x.added != None]
-    desc = 'newest' if reverse else 'oldest'
-    latest = sorted(items, key=lambda x: (x.added), reverse=reverse)
-    if verbose: number = len(records)
-    print(f'Showing {desc} {number} records.')
-    for i in range(number):
-        print(latest[i])
-
-
-def show_quality(records, number=10, verbose=False, reverse=False):
-    """ show the lowest [n] resolution records (or all if 'verbose') """
-    quality = 'highest' if reverse else 'lowest'
-    height = [ x for x in records if x.height != None ]
-    lowest = sorted(height, key=lambda x: (x.height) or 0, reverse=reverse)
-    if verbose: number = len(records)
-    print(f'Showing {number} {quality} resolution records.')
-    for i in range(number):
-        print(lowest[i])
-
-def show_size(records, number=10, verbose=False, reverse=False):
-    """ show the largest [n] resolution records (or all if 'verbose') """
-    quality = 'largest' if reverse else 'smallest'
-    size = [ x for x in records if x.size != None ]
-    largest = sorted(size, key=lambda x: (x.size) or 0, reverse=reverse)
-    if verbose: number = len(records)
-    print(f'Showing {number} {quality} file size items.')
-    for i in range(number):
-        print(largest[i], show_file_size(largest[i].size))
-
 def show_uncompressed(records, verbose=False, min=20):
+    """ show uncompressed media records """
     uncompressed = [ x for x in records if x.uncompressed ]
     u  = len(uncompressed)
     r = len(records)
@@ -185,6 +173,7 @@ def show_uncompressed(records, verbose=False, min=20):
         if u > min: print(output)
 
 def sort_by(records, attrib='size', display=None, show=10, verbose=False, reverse=False):
+    """ function to sort media objects by a given attribute """
     filtered = [ x for x in records if hasattr(x, attrib) and getattr(x,attrib) != None ]
     sorted_list = sorted(filtered, key=lambda x: getattr(x,attrib), reverse=reverse)
     if verbose or show > 0:
@@ -243,10 +232,11 @@ def main():
 
     if args.search:
         search = ' '.join(args.search).lower()
-        search_records(search, data)
+        search_records(search, data, verbose=verbose)
 
     clock = time.perf_counter() - clock
     print(f'Total elapsed time: {showtime(clock)}.')
+
 
 if __name__== "__main__" :
     main()
