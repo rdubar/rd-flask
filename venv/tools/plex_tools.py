@@ -5,7 +5,7 @@ import time, argparse, os
 from dataclasses import dataclass
 from tqdm import tqdm
 
-from rog_tools import load_data, save_data, log, time_ago, show_file_size
+from rog_tools import load_data, save_data, log, time_ago, show_file_size, get_modified_time
 
 # Plex Server Credentials
 PLEX_IP = '192.168.0.238'
@@ -13,7 +13,7 @@ PLEX_PORT = '32400'
 PLEX_TOKEN = os.environ.get('PLEX_TOKEN', None)
 if not PLEX_TOKEN: log('NO PLEX TOKEN!')
 
-PlEX_DATA = './plex.data'
+PLEX_DATA = './plex.data'
 
 @dataclass
 class PlexRecord:
@@ -39,10 +39,12 @@ class PlexRecord:
         f = m.parts[0] if hasattr(m,'parts') else empty
         self.size = f.size if hasattr(f, 'size') else empty
         self.file = f.file if hasattr(f, 'file') else empty
+        self.uncompressed = True if self.codec=='mpeg2video' else False
 
         year = f' ({self.year })' if self.year else ''
         quality = f' {self.height}' if self.height else ''
-        self.plex = f'{self.title}{year}{quality}'
+        uncompressed = f'***' if self.uncompressed else ''
+        self.plex = f'{self.title}{year}{quality}{uncompressed}'
 
     def __str__(self):
         return self.plex
@@ -91,15 +93,18 @@ def connect_to_plex(    server_ip = PLEX_IP,
     return plex_media
 
 
-def update_media_records(update=False, reset = False, verbose=False):
+def update_media_records(update=False, reset = False, verbose=False, maxtime=12, path=PLEX_DATA):
     if reset:
         log('Resetting all media records...')
         records = []
     else:
         # load the current data
-        records = load_data(PlEX_DATA) or []
+        records = load_data(path) or []
     if not update and records:
-        return records
+        if ((time.time() - get_modified_time(path)) / 3600 > maxtime):
+            print(f'Last update > {maxtime} hours ago. Updating automatically...')
+        else:
+            return records
 
     entries = [ x.entry for x in records ] if records else []
     # get the plex media objects
@@ -120,7 +125,7 @@ def update_media_records(update=False, reset = False, verbose=False):
             m =  PlexRecord(item)
             records.append(m)
         records = sorted(records, key=lambda x: (x.entry))
-        save_data(PlEX_DATA, records)
+        save_data(path, records)
     else:
         log('All records are up-to-date.')
     return records
@@ -168,6 +173,17 @@ def show_size(records, number=10, verbose=False, reverse=False):
     for i in range(number):
         print(largest[i], show_file_size(largest[i].size))
 
+def show_uncompressed(records, verbose=False, min=20):
+    uncompressed = [ x for x in records if x.uncompressed ]
+    u  = len(uncompressed)
+    r = len(records)
+    percent = round(u / r * 100)
+    output = f'Found {u} uncompressed mpeg in {r:,} total records ({percent}%).'
+    print(output)
+    if verbose:
+        print(*uncompressed, sep='\n')
+        if u > min: print(output)
+
 def main():
     parser = argparse.ArgumentParser()
     p = parser.add_argument
@@ -176,6 +192,7 @@ def main():
     p("-n", '--new', help="show [10] newest items", type=int, nargs='?', const=10)
     p("-s", '--size', help="show [10] smallest file size items", type=int, nargs='?', const=10)
     p("-r", "--reverse", help="reverse the order of any list", action="store_true")
+    p("-m", "--mpeg", help="show uncompressed mpeg videos", action="store_true")
     p("-u", "--update", help="update the library", action="store_true")
     p("-v", "--verbose", help="increase output verbosity", action="store_true")
     p("--reset", help="reset the library", action="store_true")
@@ -195,6 +212,9 @@ def main():
 
     if args.new:
         show_latest(data, number = args.new, verbose=verbose, reverse=reverse)
+
+    if args.mpeg:
+        show_uncompressed(data, verbose=verbose)
 
     if args.search:
         search = ' '.join(args.search).lower()
