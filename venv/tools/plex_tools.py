@@ -58,7 +58,21 @@ class PlexRecord:
         self.plex = f'{self.title}{year}{quality}{uncompressed}'
 
     def __str__(self):
-        return self.plex
+        height = self.height if self.height else ''
+        uncompressed = '*' if self.uncompressed else ''
+        quality = f'{uncompressed}{height}'
+        size = show_file_size(self.size)
+        return f'{size:>10}    {quality:>5}      {self.entry}'
+
+
+def format_object(object):
+    """ return media object in desired standard format """
+    title = object.entry
+    height = object.height if object.height else ''
+    uncompressed = '*' if object.uncompressed else ''
+    quality = f'{uncompressed}{height}'
+    size = show_file_size(object.size)
+    return f'{size:>10}    {quality:>5}      {title}'
 
 
 def plex_url(part):
@@ -184,11 +198,7 @@ def sort_by(records, attrib='size', display=None, show=10, verbose=False, revers
         if not display: display = attrib
         print(f"Showing {show:,} of {s:,} items sorted by '{display}'{reversed}.")
         for i in range(show):
-            value = getattr(sorted_list[i],attrib)
-            if attrib == 'size':
-                value = show_file_size(value)
-            value = '' if attrib == 'added' else f'{value:>10}    '
-            print(f'{value}{sorted_list[i]}')
+            print(sorted_list[i])
     return sorted_list
 
 

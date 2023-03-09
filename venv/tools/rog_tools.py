@@ -79,6 +79,7 @@ def purge_files(path_list, purge_list, ignore_case = False):
 
 
 def show_file_size(bytes, r=1):
+    if not bytes: return ''
     terabytes = bytes / (10 ** 12)
     if terabytes > 1: return f'{round(terabytes, r):,}TB'
     gigabytes = bytes / (10 ** 9)
