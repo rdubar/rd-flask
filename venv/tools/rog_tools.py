@@ -143,13 +143,30 @@ def load_data(path):
     log(f'Loaded {len(data):,} records from {path}, last updated {modified}.')
     return data
 
+def read_env(path):
+    """ Read an environment file and return a dictionary of key:value pairs """
+    if not os.path.exists(path):
+        print('File not found: {path)')
+        return {}
+    with open(path, 'r') as f:
+        lines = f.readlines()
+    env = {}
+    for item in lines:
+        k, v = item.split('=')
+        k = k.strip()
+        v = v.strip()
+        if (v[0]=='"' and v[-1]=='"') or (v[0]=="'" and v[-1]=="'"):
+            v = v[1:-1]
+        env[k] = v
+    return env
+
 
 def main():
     print("Rog's Tools.")
-    return
 
-    path_list = get_all_files('..')
-    get_size_of_files(path_list)
+    #path_list = get_all_files('..')
+    #get_size_of_files(path_list)
+    read_env()
 
 if __name__== "__main__" :
     main()

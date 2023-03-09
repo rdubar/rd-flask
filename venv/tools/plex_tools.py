@@ -5,13 +5,18 @@ import time, argparse, os, re
 from dataclasses import dataclass
 from tqdm import tqdm
 
-from rog_tools import load_data, save_data, log, time_ago, show_file_size, get_modified_time, showtime
+from rog_tools import load_data, save_data, log, time_ago, show_file_size, get_modified_time, showtime, read_env
 
 # Plex Server Credentials
+ENV = read_env('./.env') or {}
+
+"""
+# Expects a .env file in the following format:
+
 PLEX_IP = '192.168.0.238'
 PLEX_PORT = '32400'
-PLEX_TOKEN = os.environ.get('PLEX_TOKEN', None)
-if not PLEX_TOKEN: log('NO PLEX TOKEN!')
+PLEX_TOKEN = '?????????????'
+"""
 
 PLEX_DATA = './plex.data'
 
@@ -66,7 +71,8 @@ class PlexRecord:
         uncompressed = '*' if self.uncompressed else ''
         quality = f'{uncompressed}{height}'
         size = show_file_size(self.size)
-        return f'{size:>10}    {quality:>5}      {self.title} {self.year}'
+        year = f' ({self.year})' if self.year else ''
+        return f'{size:>10}    {quality:>5}      {self.title}{year}'
 
 
 
@@ -82,12 +88,17 @@ def get_entry(title, year):
         entry += f' ({year})'
     return entry
 
-def connect_to_plex(    server_ip = PLEX_IP,
-                        port = PLEX_PORT,
-                        token = PLEX_TOKEN
+def connect_to_plex(    server_ip = None,
+                        port = None,
+                        token = None
                             ):
+    global ENV
+    if not server_ip and 'PLEX_IP' in ENV: server_ip = ENV['PLEX_IP']
+    if not port and 'PLEX_PORT' in ENV: port = ENV['PLEX_PORT']
+    if not token and 'PLEX_TOKEN' in ENV: token = ENV['PLEX_TOKEN']
+
     """Connect to the Plex server and return a list of Plex Objects """
-    if not PLEX_TOKEN:
+    if not token:
         print('No Plex Token: unable to connect to Plex')
         return []
     baseurl = f'http://{server_ip}:{port}'
