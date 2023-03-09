@@ -8,7 +8,7 @@ from tqdm import tqdm
 from rog_tools import load_data, save_data, log, time_ago, show_file_size, get_modified_time, showtime, read_env
 
 # Plex Server Credentials
-ENV = read_env('/'.join(__file__.split('/')[:-1])+'.plex') or {}
+read_env('.plex')
 """
 # Expects a .plex file in the same folder as plex_tools module with the following format:
 
