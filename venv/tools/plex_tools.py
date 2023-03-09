@@ -8,9 +8,9 @@ from tqdm import tqdm
 from rog_tools import load_data, save_data, log, time_ago, show_file_size, get_modified_time, showtime, read_env
 
 # Plex Server Credentials
-ENV = read_env('./.plex') or {}
+ENV = read_env('/'.join(__file__.split('/')[:-1])+'.plex') or {}
 """
-# Expects a .plex file in the following format:
+# Expects a .plex file in the same folder as plex_tools module with the following format:
 
 PLEX_IP = '192.168.0.238'
 PLEX_PORT = '32400'
@@ -92,16 +92,16 @@ def connect_to_plex(    server_ip = None,
                         token = None
                             ):
     global ENV
-    if not server_ip:server_ip = os.environ.get['PLEX_IP']
-    if not port: port = os.environ.get['PLEX_PORT']
-    if not token: token = os.environ.get['PLEX_TOKEN']
+    if not server_ip:server_ip = os.environ.get('PLEX_IP')
+    if not port: port = os.environ.get('PLEX_PORT')
+    if not token: token = os.environ.get('PLEX_TOKEN')
 
     """Connect to the Plex server and return a list of Plex Objects """
-    if not token:
-        print('No Plex Token: unable to connect to Plex')
+    if not (token and port and server_ip):
+        print(f'Plex server info missing: {server_ip}:{port}?{token}. Unable to connect.')
         return []
     baseurl = f'http://{server_ip}:{port}'
-    print(f'Connecting to Plex server at {server_ip}. Please wait...')
+    print(f'Connecting to Plex server at {server_ip}:{port}. Please wait...')
     clock = time.perf_counter()
     try:
         plex = PlexServer(baseurl, token)

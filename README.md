@@ -20,3 +20,11 @@ $env:SECRET_KEY="????????????"
 ```
 
 $env:PLEX_TOKEN='dbufy5hZk2k91QpxYUuW'
+
+```
+# Expects a .plex file in the same folder as plex_tools module with the following format:
+
+PLEX_IP = '192.168.0.238'
+PLEX_PORT = '32400'
+PLEX_TOKEN = '?????????????'
+```

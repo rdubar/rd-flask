@@ -146,7 +146,7 @@ def load_data(path):
 def read_env(path):
     """ Read an environment file, set env variables and return a dictionary of key:value pairs """
     if not os.path.exists(path):
-        print('File not found: {path)')
+        print(f'read_env file not found: {path}')
         return {}
     with open(path, 'r') as f:
         lines = f.readlines()
