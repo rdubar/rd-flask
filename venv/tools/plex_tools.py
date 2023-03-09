@@ -8,10 +8,9 @@ from tqdm import tqdm
 from rog_tools import load_data, save_data, log, time_ago, show_file_size, get_modified_time, showtime, read_env
 
 # Plex Server Credentials
-ENV = read_env('./.env') or {}
-
+ENV = read_env('./.plex') or {}
 """
-# Expects a .env file in the following format:
+# Expects a .plex file in the following format:
 
 PLEX_IP = '192.168.0.238'
 PLEX_PORT = '32400'
@@ -93,9 +92,9 @@ def connect_to_plex(    server_ip = None,
                         token = None
                             ):
     global ENV
-    if not server_ip and 'PLEX_IP' in ENV: server_ip = ENV['PLEX_IP']
-    if not port and 'PLEX_PORT' in ENV: port = ENV['PLEX_PORT']
-    if not token and 'PLEX_TOKEN' in ENV: token = ENV['PLEX_TOKEN']
+    if not server_ip:server_ip = os.environ.get['PLEX_IP']
+    if not port: port = os.environ.get['PLEX_PORT']
+    if not token: token = os.environ.get['PLEX_TOKEN']
 
     """Connect to the Plex server and return a list of Plex Objects """
     if not token:
@@ -210,6 +209,7 @@ def sort_by(records, attrib='size', display=None, show=10, verbose=False, revers
 
 def main():
     clock = time.perf_counter()
+    print("Rog's Plex Tools.")
 
     parser = argparse.ArgumentParser()
     p = parser.add_argument

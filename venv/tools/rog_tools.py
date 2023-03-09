@@ -144,7 +144,7 @@ def load_data(path):
     return data
 
 def read_env(path):
-    """ Read an environment file and return a dictionary of key:value pairs """
+    """ Read an environment file, set env variables and return a dictionary of key:value pairs """
     if not os.path.exists(path):
         print('File not found: {path)')
         return {}
@@ -153,11 +153,12 @@ def read_env(path):
     env = {}
     for item in lines:
         k, v = item.split('=')
-        k = k.strip()
-        v = v.strip()
+        k = str(k.strip())
+        v = str(v.strip())
         if (v[0]=='"' and v[-1]=='"') or (v[0]=="'" and v[-1]=="'"):
             v = v[1:-1]
         env[k] = v
+        os.environ[k] = v
     return env
 
 
