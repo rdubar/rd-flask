@@ -1,7 +1,7 @@
 import os
 
 from plexapi.server import PlexServer
-import time, argparse, os, re
+import time, argparse, os, re, sys
 from dataclasses import dataclass
 from tqdm import tqdm
 
@@ -231,6 +231,9 @@ def main():
 
     data = update_media_records(update=args.update, reset=args.reset, verbose=verbose)
 
+    if len(sys.argv) == 1:
+        args.new = 3
+
     if args.quality:
         sort_by(data, attrib='height', show = args.quality, verbose=verbose, reverse=reverse)
 
@@ -249,7 +252,6 @@ def main():
     if args.search:
         search = ' '.join(args.search).lower()
         search_records(search, data, verbose=verbose)
-
 
     clock = time.perf_counter() - clock
     print(f'Total elapsed time: {showtime(clock)}.')

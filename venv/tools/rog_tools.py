@@ -143,14 +143,13 @@ def load_data(path):
     log(f'Loaded {len(data):,} records from {path}, last updated {modified}.')
     return data
 
-def read_env(name, verbose=True):
+def read_env(name, debug=False):
     """ Read an environment file, set env variables and return a dictionary of key:value pairs """
     path = __file__[:__file__.rfind('/')+1]+name
     if not os.path.exists(path):
         print(f'read_env: file not found: {path}')
-
         return {}
-    print(f'read_env: {path}')
+    if debug: print(f'read_env: {path}')
     with open(path, 'r') as f:
         lines = f.readlines()
     env = {}
@@ -162,7 +161,7 @@ def read_env(name, verbose=True):
             v = v[1:-1]
         env[k] = v
         os.environ[k] = v
-        print(k)
+        if debug: print(k)
     return env
 
 
