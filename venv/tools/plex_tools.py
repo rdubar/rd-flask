@@ -22,6 +22,10 @@ def object_clean(object, remove):
     text = re.sub('[^A-Za-z0-9 ]+', ' ', text).replace(remove,'')
     return text
 
+def search_data(object):
+    """ return lower case values of object vars for easy search """
+    return str(vars(object).values()).lower()
+
 @dataclass
 class PlexRecord:
     """ Record to store desired information from a Plex object as text """
@@ -62,17 +66,8 @@ class PlexRecord:
         uncompressed = '*' if self.uncompressed else ''
         quality = f'{uncompressed}{height}'
         size = show_file_size(self.size)
-        return f'{size:>10}    {quality:>5}      {self.entry}'
+        return f'{size:>10}    {quality:>5}      {self.title} {self.year}'
 
-
-def format_object(object):
-    """ return media object in desired standard format """
-    title = object.entry
-    height = object.height if object.height else ''
-    uncompressed = '*' if object.uncompressed else ''
-    quality = f'{uncompressed}{height}'
-    size = show_file_size(object.size)
-    return f'{size:>10}    {quality:>5}      {title}'
 
 
 def plex_url(part):
@@ -168,7 +163,7 @@ def search_records(text, records, verbose=False):
     print(f'Searching for: {lower}')
     matches = 0
     for item in records:
-        if lower in str(vars(item)).lower():
+        if lower in search_data(item):
             print(item)
             if verbose: print(vars(item))
             matches += 1
@@ -243,6 +238,7 @@ def main():
     if args.search:
         search = ' '.join(args.search).lower()
         search_records(search, data, verbose=verbose)
+
 
     clock = time.perf_counter() - clock
     print(f'Total elapsed time: {showtime(clock)}.')
