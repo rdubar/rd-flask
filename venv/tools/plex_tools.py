@@ -234,20 +234,19 @@ def main():
     number = args.number or 5
 
     if not quiet: print("Rog's Plex Tools.")
-
     if verbose: print('Arguments:', args)
 
     data = update_media_records(update=args.update, reset=args.reset, verbose=verbose)
 
-    if len(sys.argv) == 1:
-        args.added = True
-        reverse = True
-
     sort_criteria = []
-
     if args.pixels: sort_criteria.append('height')
     if args.size:   sort_criteria.append('size')
     if args.added:  sort_criteria.append('added')
+
+    # setup default view
+    if not sort_criteria:
+        sort_criteria = [ 'added' ]
+        reverse = True
 
     for s in sort_criteria:
         data = sort_by(data, attrib=s, reverse=reverse, verbose=verbose, quiet=quiet)
