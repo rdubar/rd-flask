@@ -218,13 +218,14 @@ def main():
     p = parser.add_argument
     p("search", help="search the library", type=str, nargs='*')
     p("-n", '--number', help="show [10] items", type=int, nargs='?', const=10)
-    p("-q", '--quiet', help="quiet mode", action="store_true")
-    p("-a", '--added', help="soft by data added", action="store_true")
+    p("-a", '--all', help="show all", action="store_true")
+    p("-d", '--date', help="soft by date added", action="store_true")
     p("-p", '--pixels', help="soft by video height in pixels", action="store_true")
     p("-s", '--size', help="soft by file size", action="store_true")
     p("-r", "--reverse", help="reverse the order of any list", action="store_true")
     p("-m", "--mpeg", help="filter by uncompressed mpeg videos", action="store_true")
     p("-u", "--update", help="update the library", action="store_true")
+    p("-q", '--quiet', help="quiet mode", action="store_true")
     p("-v", "--verbose", help="increase output verbosity", action="store_true")
     p("--reset", help="reset the library", action="store_true")
     args = parser.parse_args()
@@ -238,10 +239,14 @@ def main():
 
     data = update_media_records(update=args.update, reset=args.reset, verbose=verbose)
 
+    if args.all:
+        if verbose: print('Showing all items.')
+        number = len(data)
+
     sort_criteria = []
     if args.pixels: sort_criteria.append('height')
     if args.size:   sort_criteria.append('size')
-    if args.added:  sort_criteria.append('added')
+    if args.date:  sort_criteria.append('added')
 
     # setup default view
     if not sort_criteria:
