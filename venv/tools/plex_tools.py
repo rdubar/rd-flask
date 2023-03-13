@@ -231,7 +231,7 @@ def main():
     quiet = args.quiet
     verbose = args.verbose
     reverse = args.reverse
-    number = args.number or 3
+    number = args.number or 5
 
     if not quiet: print("Rog's Plex Tools.")
 
