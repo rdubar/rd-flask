@@ -127,12 +127,11 @@ def connect_to_plex(    server_ip = None,
 
 def update_media_records(update=False, reset = False, verbose=False, maxtime=12, path=PLEX_DATA, debug=False):
     """ Update media records from the Plex Server Objects as required """
+    # load the current data
+    records = load_data(path) or []
     if reset:
         log('Resetting all media records...')
         records = []
-    else:
-        # load the current data
-        records = load_data(path) or []
     if not update and records:
         if ((time.time() - get_modified_time(path)) / 3600 > maxtime):
             print(f'Last update > {maxtime} hours ago. Updating automatically...')
@@ -150,7 +149,7 @@ def update_media_records(update=False, reset = False, verbose=False, maxtime=12,
             new.append(item)
     u = len(new)
     if u > 0:
-        d = f'Updating plex info for {u} items'
+        d = f'Updating plex info for {u:,} items'
         if verbose:
             for x in new:
                 print(x)
@@ -191,60 +190,67 @@ def show_uncompressed(records, verbose=False, min=20):
         print(*uncompressed, sep='\n')
         if u > min: print(output)
 
-def sort_by(records, attrib='size', display=None, show=10, verbose=False, reverse=False):
+def sort_by(records, attrib='size', reverse=False, verbose=False, quiet=False):
     """ function to sort media objects by a given attribute """
+    if verbose: r = len(records)
     filtered = [ x for x in records if hasattr(x, attrib) and getattr(x,attrib) != None ]
+    if not quiet and len(filtered)==0:
+        print(f"Filtered {r:,} records by '{attrib}, returned no items.")
     sorted_list = sorted(filtered, key=lambda x: getattr(x,attrib), reverse=reverse)
-    if verbose or show > 0:
-        reversed = ' (reversed)' if reverse else ''
-        s = len(sorted_list)
-        r = len(records)
-        if s > r: number = s
-        if not display: display = attrib
-        print(f"Showing {show:,} of {s:,} items sorted by '{display}'{reversed}.")
-        for i in range(show):
-            print(sorted_list[i])
     return sorted_list
+
+def show_records(records, number=10, verbose=False, reverse=False, quiet=False, desc='description'):
+    """ display [number] of records """
+    r = len(records)
+    if number > r: number = r
+    reversed = ' (reversed)' if reverse else ''
+    report = f"Showing {number:,} of {r:,} items sorted by '{desc}'{reversed}."
+    if not quiet: print(report)
+    for i in range(number):
+        print(records[i])
+    if verbose: print(report)
 
 
 def main():
     clock = time.perf_counter()
-    print("Rog's Plex Tools.")
 
     parser = argparse.ArgumentParser()
     p = parser.add_argument
     p("search", help="search the library", type=str, nargs='*')
-    p("-q", '--quality', help="show [10] highest resolution items", type=int, nargs='?', const=10)
-    p("-a", '--added', help="show [10] oldest items", type=int, nargs='?', const=10)
-    p("-n", '--new', help="show [10] newest items", type=int, nargs='?', const=10)
-    p("-s", '--size', help="show [10] smallest file size items", type=int, nargs='?', const=10)
+    p("-n", '--number', help="show [10] items", type=int, nargs='?', const=10)
+    p("-q", '--quiet', help="quiet mode", action="store_true")
+    p("-a", '--added', help="soft by data added", action="store_true")
+    p("-p", '--pixels', help="soft by video height in pixels", action="store_true")
+    p("-s", '--size', help="soft by file size", action="store_true")
     p("-r", "--reverse", help="reverse the order of any list", action="store_true")
-    p("-m", "--mpeg", help="show uncompressed mpeg videos", action="store_true")
+    p("-m", "--mpeg", help="filter by uncompressed mpeg videos", action="store_true")
     p("-u", "--update", help="update the library", action="store_true")
     p("-v", "--verbose", help="increase output verbosity", action="store_true")
     p("--reset", help="reset the library", action="store_true")
     args = parser.parse_args()
+    quiet = args.quiet
     verbose = args.verbose
     reverse = args.reverse
+    number = args.number or 3
 
-    if verbose: print(f'Verbose mode. Arguments: {args}')
+    if not quiet: print("Rog's Plex Tools.")
+
+    if verbose: print('Arguments:', args)
 
     data = update_media_records(update=args.update, reset=args.reset, verbose=verbose)
 
     if len(sys.argv) == 1:
-        args.new = 3
+        args.added = True
+        reverse = True
 
-    if args.quality:
-        sort_by(data, attrib='height', show = args.quality, verbose=verbose, reverse=reverse)
+    sort_criteria = []
 
-    if args.size:
-        sort_by(data, attrib='size', show = args.size, verbose=verbose, reverse=reverse)
+    if args.pixels: sort_criteria.append('height')
+    if args.size:   sort_criteria.append('size')
+    if args.added:  sort_criteria.append('added')
 
-    if args.added:
-        sort_by(data, attrib='added', show=args.new, verbose=verbose, reverse=reverse)
-
-    if args.new:
-        sort_by(data, attrib='added', display='newest', show=args.new, verbose=verbose, reverse=not reverse)
+    for s in sort_criteria:
+        data = sort_by(data, attrib=s, reverse=reverse, verbose=verbose, quiet=quiet)
 
     if args.mpeg:
         show_uncompressed(data, verbose=verbose)
@@ -252,6 +258,8 @@ def main():
     if args.search:
         search = ' '.join(args.search).lower()
         search_records(search, data, verbose=verbose)
+    else:
+        show_records(data, number=number, quiet=quiet, verbose=verbose, reverse=reverse, desc=sort_criteria)
 
     clock = time.perf_counter() - clock
     print(f'Total elapsed time: {showtime(clock)}.')
