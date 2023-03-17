@@ -171,18 +171,19 @@ def update_media_records(update=False, reset = False, verbose=False, maxtime=24,
         log('All records are up-to-date.')
     return records
 
-def search_records(text, records, verbose=False):
+def search_records(text, records, verbose=False, quiet=False):
     """ Show result of search of media records """
     if not text or not records: return
     lower = text.lower()
     print(f'Searching for: {lower}')
-    matches = 0
+    matches = []
     for item in records:
         if lower in search_data(item):
             print(item.display())
             if verbose: print(vars(item))
-            matches += 1
-    print(f'{matches} matches for "{lower}".')
+            matches.append(item)
+    if not quiet: print(f'{len(matches)} matches for "{lower}".')
+    return matches
 
 def show_uncompressed(records, verbose=False, min=20):
     """ show uncompressed media records """
@@ -270,7 +271,7 @@ def main():
 
     if args.search:
         search = ' '.join(args.search).lower()
-        search_records(search, data, verbose=verbose)
+        matches = search_records(search, data, verbose=verbose)
     else:
         show_records(data, number=number, quiet=quiet, verbose=verbose, reverse=reverse, desc=sort_criteria)
 
