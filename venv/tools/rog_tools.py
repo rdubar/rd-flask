@@ -114,7 +114,7 @@ def save_data(path, data):
     if not path:
         log('Save data - no path given')
         return False
-    if not data:
+    if not data or len(data)==0:
         log(f'No data to save to {path}')
         return False
     backup = path + '.bak'

@@ -66,12 +66,18 @@ class PlexRecord:
         self.plex = f'{self.title}{year}{quality}{uncompressed}'
 
     def __str__(self):
+        return self.entry.title()
+
+    def display(self, bit=True):
         height = self.height if self.height else ''
         uncompressed = '*' if self.uncompressed else ''
         quality = f'{uncompressed}{height}'
         size = show_file_size(self.size)
-        year = f' ({self.year})' if self.year else ''
-        return f'{size:>10}    {quality:>5}      {self.title}{year}'
+        title = self.entry.title()
+        bitrate = self.bitrate if bit and self.bitrate else ''
+        codec = self.codec if self.codec else ''
+        if codec == 'mpeg2video': codec = "*mpeg2"
+        return f'{size:>8}{quality:>7}{bitrate:>7}{codec:>8}    {title}'
 
 
 
@@ -125,7 +131,7 @@ def connect_to_plex(    server_ip = None,
     return plex_media
 
 
-def update_media_records(update=False, reset = False, verbose=False, maxtime=12, path=PLEX_DATA, debug=False):
+def update_media_records(update=False, reset = False, verbose=False, maxtime=24, path=PLEX_DATA, debug=False):
     """ Update media records from the Plex Server Objects as required """
     # load the current data
     records = load_data(path) or []
@@ -173,7 +179,7 @@ def search_records(text, records, verbose=False):
     matches = 0
     for item in records:
         if lower in search_data(item):
-            print(item)
+            print(item.display())
             if verbose: print(vars(item))
             matches += 1
     print(f'{matches} matches for "{lower}".')
@@ -192,10 +198,13 @@ def show_uncompressed(records, verbose=False, min=20):
 
 def sort_by(records, attrib='size', reverse=False, verbose=False, quiet=False):
     """ function to sort media objects by a given attribute """
-    if verbose: r = len(records)
+    r = len(records)
     filtered = [ x for x in records if hasattr(x, attrib) and getattr(x,attrib) != None ]
     if not quiet and len(filtered)==0:
         print(f"Filtered {r:,} records by '{attrib}, returned no items.")
+        filtered = records
+    elif verbose:
+        print(f"Sorting {len(filtered):,} of {r:,} total records by '{attrib}.")
     sorted_list = sorted(filtered, key=lambda x: getattr(x,attrib), reverse=reverse)
     return sorted_list
 
@@ -207,7 +216,7 @@ def show_records(records, number=10, verbose=False, reverse=False, quiet=False, 
     report = f"Showing {number:,} of {r:,} items sorted by '{desc}'{reversed}."
     if not quiet: print(report)
     for i in range(number):
-        print(records[i])
+        print(records[i].display())
     if verbose: print(report)
 
 
@@ -246,7 +255,7 @@ def main():
     sort_criteria = []
     if args.pixels: sort_criteria.append('height')
     if args.size:   sort_criteria.append('size')
-    if args.date:  sort_criteria.append('added')
+    if args.date:   sort_criteria.append('added')
 
     # setup default view
     if not sort_criteria:
